@@ -13,7 +13,7 @@ function Area_check(para) {
   return para ? para : "未知国家";
 }
 
-// 3. 国旗映射表 (支持特殊修正)
+// 3. 国旗映射表
 const flags = new Map([
   ["CN","🇨🇳"],["HK","🇭🇰"],["TW","🇨🇳"],["SG","🇸🇬"],["US","🇺🇸"],["JP","🇯🇵"],["KR","🇰🇷"]
 ]);
@@ -29,18 +29,21 @@ try {
   const country = Area_check(obj['country']);
   const region = City_ValidCheck(obj['regionName']);
   const ipAddr = obj['query'] || "Unknown IP";
-  const ispInfo = obj['isp'] || "Unknown ISP";
+  const ispInfo = obj['isp'] || obj['org'] || "Unknown ISP";
   
-  // 提取 AS 号 (从 "AS12345 Name" 中提取 "AS12345")
-  const asFull = obj['as'] ? obj['as'].split(' ')[0] : "AS00000";
+  // --- 强制获取 AS 号逻辑 ---
+  // 有些接口返回的是 obj.as，有些是 obj.asname
+  let asField = obj['as'] || obj['asname'] || "AS0000";
+  // 只取开头的 ASXXXX 部分
+  const asNumber = asField.split(' ')[0];
 
-  // --- 按照要求格式化（已移除云朵符号） ---
+  // --- 按照要求格式化 ---
   
   // 第一行：国旗 国家 IP
   const title = `${emoji} ${country}  ${ipAddr}`;
   
   // 第二行：AS号 地区 服务商
-  const subtitle = `${asFull}  ${region}  ${ispInfo}`;
+  const subtitle = `${asNumber}  ${region}  ${ispInfo}`;
 
   // 详细面板 (Description)
   const description = [
@@ -58,5 +61,5 @@ try {
 
 } catch (e) {
   console.log("QXGeo Error: " + e);
-  $done({title: "解析失败", subtitle: "请检查 API 响应"});
+  $done({title: "解析失败", subtitle: "请检查 API 响应数据"});
 }
