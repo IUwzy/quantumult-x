@@ -13,7 +13,7 @@ function Area_check(para) {
   return para ? para : "未知国家";
 }
 
-// 3. 国旗映射表 (特殊修正，其余代码会自动补全)
+// 3. 国旗映射表 (支持特殊修正)
 const flags = new Map([
   ["CN","🇨🇳"],["HK","🇭🇰"],["TW","🇨🇳"],["SG","🇸🇬"],["US","🇺🇸"],["JP","🇯🇵"],["KR","🇰🇷"]
 ]);
@@ -29,15 +29,18 @@ try {
   const country = Area_check(obj['country']);
   const region = City_ValidCheck(obj['regionName']);
   const ipAddr = obj['query'] || "Unknown IP";
-  const ispInfo = obj['isp'] || "Unknown ISP"; // 这里对应你说的“服务器/服务商”
+  const ispInfo = obj['isp'] || "Unknown ISP";
+  
+  // 提取 AS 号 (从 "AS12345 Name" 中提取 "AS12345")
+  const asFull = obj['as'] ? obj['as'].split(' ')[0] : "AS00000";
 
-  // --- 按照你的最新要求格式化 ---
+  // --- 按照要求格式化（已移除云朵符号） ---
   
   // 第一行：国旗 国家 IP
   const title = `${emoji} ${country}  ${ipAddr}`;
   
-  // 第二行：地区 服务器(服务商)
-  const subtitle = `${region}  ${ispInfo}`;
+  // 第二行：AS号 地区 服务商
+  const subtitle = `${asFull}  ${region}  ${ispInfo}`;
 
   // 详细面板 (Description)
   const description = [
@@ -50,7 +53,7 @@ try {
     `🪙 货币: ${obj['currency'] || "Unknown"}`
   ].join('\n\n');
 
-  // 5. 返回结果给 QX
+  // 5. 返回结果
   $done({title, subtitle, ip: ipAddr, description});
 
 } catch (e) {
