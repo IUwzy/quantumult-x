@@ -1,65 +1,36 @@
-// 1. 状态检查
-if (!$response || $response.statusCode != 200) {
-  $done({});
+// 优化后的脚本：调整排版使 IP 视觉上更协调
+if ($response.statusCode != 200) {
+  $done(null);
 }
 
-// 2. 基础校验函数
+var body = $response.body;
+var obj = JSON.parse(body);
+
+// --- 数据处理 ---
+var countryName = Area_check(obj['country']);
+var flag = flags.get(obj['countryCode']) || "";
+var currSymbol = flags.get(obj['currency']) || "";
+
+// --- 视觉优化方案 ---
+
+// 第一行：只放 [国旗] 国家 城市 (保持标题精简)
+var title = flag + " " + countryName + " · " + obj['city'];
+
+// 第二行：放 IP 和 AS 信息 (第二行字体比第一行小，IP 看起来就不会那么突兀)
+var subtitle = "IP: " + obj['query'] + "  (" + obj['as'] + ")";
+
+// 这里的 ip 变量在某些 UI 插件中会显示，保持简洁
+var ip = obj['query'];
+
+var description = '------------------------------'+'\n'+'🖥️ 服务商: '+obj['isp'] + '\n'+'🌍 地区: ' +City_ValidCheck(obj['regionName'])+ '\n' + '🗺️ IP地址: '+ obj['query'] + '\n' +'🕗 时区: '+ obj['timezone']+'\n'+'📍 经纬度: '+obj['lon']+ ','+obj['lat']+'\n' +'🪙 货币: '+ obj['currency'] + " " + currSymbol;
+
+$done({title, subtitle, ip, description});
+
+// --- 原有函数保持不变 ---
 function City_ValidCheck(para) {
-  return para ? para : "未知地区";
+  return para ? para : "高谭市";
 }
 
 function Area_check(para) {
-  if(para === "中华民国") return "台湾";
-  return para ? para : "未知国家";
-}
-
-// 3. 国旗映射表
-const flags = new Map([
-  ["CN","🇨🇳"],["HK","🇭🇰"],["TW","🇨🇳"],["SG","🇸🇬"],["US","🇺🇸"],["JP","🇯🇵"],["KR","🇰🇷"]
-]);
-
-// 4. 解析与显示逻辑
-try {
-  const obj = JSON.parse($response.body);
-  const code = obj['countryCode'];
-  
-  // 自动获取/生成国旗 Emoji
-  const emoji = flags.get(code) || (code ? code.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397)) : "📍");
-  
-  const country = Area_check(obj['country']);
-  const region = City_ValidCheck(obj['regionName']);
-  const ipAddr = obj['query'] || "Unknown IP";
-  const ispInfo = obj['isp'] || obj['org'] || "Unknown ISP";
-  
-  // --- 强制获取 AS 号逻辑 ---
-  // 有些接口返回的是 obj.as，有些是 obj.asname
-  let asField = obj['as'] || obj['asname'] || "AS0000";
-  // 只取开头的 ASXXXX 部分
-  const asNumber = asField.split(' ')[0];
-
-  // --- 按照要求格式化 ---
-  
-  // 第一行：国旗 国家 IP
-  const title = `${emoji} ${country}  ${ipAddr}`;
-  
-  // 第二行：AS号 地区 服务商
-  const subtitle = `${asNumber}  ${region}  ${ispInfo}`;
-
-  // 详细面板 (Description)
-  const description = [
-    '------------------------------',
-    `🖥️ 服务商: ${ispInfo}`,
-    `🌍 地区: ${region}`,
-    `🗺️ IP地址: ${ipAddr} ${emoji}`,
-    `🕗 时区: ${obj['timezone'] || "Unknown"}`,
-    `📍 经纬度: ${obj['lon'] || "0"},${obj['lat'] || "0"}`,
-    `🪙 货币: ${obj['currency'] || "Unknown"}`
-  ].join('\n\n');
-
-  // 5. 返回结果
-  $done({title, subtitle, ip: ipAddr, description});
-
-} catch (e) {
-  console.log("QXGeo Error: " + e);
-  $done({title: "解析失败", subtitle: "请检查 API 响应数据"});
+  return para == "中华民国" ? "台湾" : para;
 }
